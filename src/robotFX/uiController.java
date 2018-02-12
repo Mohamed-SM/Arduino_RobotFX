@@ -2,6 +2,8 @@ package robotFX;
 
 
 import com.fazecast.jSerialComm.SerialPort;
+
+import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -55,7 +57,7 @@ public class uiController {
     @FXML
     TableColumn<Pose,Integer> posePinchColumn;
 
-
+    String textToSet = "";
     private Main main;
 
     @FXML
@@ -96,6 +98,22 @@ public class uiController {
             }
 
         });
+        
+        textArea.textProperty().addListener((ob,ol,newValue) -> {
+            	String array[] = newValue.split("\n");
+            	textToSet = "";
+                
+                if (array.length > 20) {
+					for (int i = array.length - 20; i < array.length; i++) {
+						textToSet += array[i] + "\n";
+					}
+					Platform.runLater(() -> { 
+						textArea.setText(textToSet); 
+			        }); 
+					
+				}
+            });
+
     }
 
     public void fillComboBox() {

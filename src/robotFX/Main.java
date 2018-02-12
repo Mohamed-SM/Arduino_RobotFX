@@ -63,10 +63,11 @@ public class Main extends Application {
             if (port.openPort()) {
                 //System.out.println("Connection is opend");
                 controller.appandText("Connection is opend");
-                port.setBaudRate(9600);
+                port.setBaudRate(115200);
                 port.setComPortTimeouts(SerialPort.TIMEOUT_SCANNER, 0, 0);
                 connected = true;
                 creatAndStartThread();
+                start();
             } else {
                 System.err.println("Chack connection ther is a problem : " + selectedIndex);
                 controller.appandText("Chack connection ther is a problem : \n" + selectedIndex);
@@ -75,10 +76,11 @@ public class Main extends Application {
             if (port.isOpen()) {
                 //System.out.println("port is alredy open");
                 controller.appandText("port is alredy open");
-                port.setBaudRate(9600);
+                port.setBaudRate(115200);
                 port.setComPortTimeouts(SerialPort.TIMEOUT_SCANNER, 0, 0);
                 connected = true;
                 creatAndStartThread();
+                start();
             } else {
                 System.err.println("Chack connection ther is a problem : " + selectedIndex);
                 controller.appandText("Chack connection ther is a problem : \n" + selectedIndex);
@@ -90,7 +92,6 @@ public class Main extends Application {
     public void desconnect() {
 
         if (connected) {
-            this.move(90, 90, 90,130);
 
             try {
                 Thread.sleep(1000);
@@ -161,6 +162,28 @@ public class Main extends Application {
                 + new DecimalFormat("000").format(pose.getShouler()) + " "
                 + new DecimalFormat("000").format(pose.getElbow()) + " "
                 + new DecimalFormat("000").format(pose.getPinch());
+        printWriter.print(msg);
+        System.out.println( "sendeing msg : " + msg);
+        printWriter.flush();
+
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException ignored) { }
+
+        printWriter.close();
+    }
+
+    public void start() {
+
+
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException ignored) { }
+
+
+        PrintWriter printWriter;
+        printWriter = new PrintWriter(this.port.getOutputStream());
+        String msg = "start";
         printWriter.print(msg);
         System.out.println( "sendeing msg : " + msg);
         printWriter.flush();
