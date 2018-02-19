@@ -52,13 +52,11 @@ public final class OpenCVUtils
 	 */
 	public static <T> void onFXThread(final ObjectProperty<T> property, final T value)
 	{
-		Platform.runLater(() -> {
-			property.set(value);
-		});
+		Platform.runLater(() -> property.set(value));
 	}
-	
+
 	/**
-	 * Support for the {@link mat2image()} method
+	 * Support for the mat2image method
 	 * 
 	 * @param original
 	 *            the {@link Mat} object in BGR or grayscale
@@ -67,7 +65,7 @@ public final class OpenCVUtils
 	private static BufferedImage matToBufferedImage(Mat original)
 	{
 		// init
-		BufferedImage image = null;
+		BufferedImage image;
 		int width = original.width(), height = original.height(), channels = original.channels();
 		byte[] sourcePixels = new byte[width * height * channels];
 		original.get(0, 0, sourcePixels);
@@ -76,8 +74,7 @@ public final class OpenCVUtils
 		{
 			image = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
 		}
-		else
-		{
+		else {
 			image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
 		}
 		final byte[] targetPixels = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();

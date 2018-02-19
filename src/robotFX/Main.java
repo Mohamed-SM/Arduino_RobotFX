@@ -6,9 +6,14 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import org.opencv.core.Core;
+import org.opencv.core.Point;
 import robotFX.model.Pose;
 import robotFX.view.ObjRecognitionController;
 import robotFX.view.uiController;
@@ -16,16 +21,21 @@ import robotFX.view.uiController;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 
 public class Main extends Application {
 
+    private Scene primaryScene;
     public SerialPort serPort[] = SerialPort.getCommPorts();
     private SerialPort port;
     private static boolean connected;
     private uiController controller;
     private Stage primaryStage;
+    private ObjRecognitionController objRecognitionController;
+    public ObservableList<Point> points  = FXCollections.observableArrayList();
 
     public ObservableList<Pose> savedPoses = FXCollections.observableArrayList();
 
@@ -38,12 +48,14 @@ public class Main extends Application {
 
             BorderPane root = loader.load();
 
-            Scene scene = new Scene(root);
-            primaryStage.setScene(scene);
+            primaryScene = new Scene(root);
+            primaryStage.setScene(primaryScene);
+            primaryStage.setMaximized(true);
             primaryStage.show();
 
             BorderPane objRecognitionBorderPan = objRecognitionloader.load();
-            ObjRecognitionController objRecognitionController = objRecognitionloader.getController();
+            objRecognitionController = objRecognitionloader.getController();
+            objRecognitionController.setMainApp(this,points);
 
             primaryStage.setOnCloseRequest(event -> {
                 objRecognitionController.setClosed();
@@ -60,6 +72,28 @@ public class Main extends Application {
             e.printStackTrace();
         }
 
+    }
+
+    public void fullScreenCam(ImageView fulloriginalFrame) {
+        AnchorPane anchorPane = new AnchorPane();
+        anchorPane.getChildren().add(fulloriginalFrame);
+        fulloriginalFrame.setFitWidth(Screen.getPrimary().getBounds().getWidth());
+        fulloriginalFrame.setFitHeight(Screen.getPrimary().getBounds().getHeight());
+        Scene scene = new Scene(anchorPane);
+        this.primaryStage.setScene(scene);
+        this.primaryStage.setFullScreen(true);
+
+        scene.setOnKeyPressed(keyEvent -> {
+
+            if (keyEvent.getCode().equals(KeyCode.ESCAPE)) {
+                primaryStage.setScene(primaryScene);
+                this.primaryStage.setFullScreen(false);
+                this.primaryStage.setMaximized(false);
+                this.primaryStage.setMaximized(true);
+            }
+
+            // ... other keyevents
+        });
     }
 
     public static void main(String[] args) {
@@ -134,31 +168,6 @@ public class Main extends Application {
 
     }
 
-    public void move(double base, double shoulder, double elbow, double pinch) {
-
-        /*
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException ignored) { }
-        */
-
-        PrintWriter printWriter;
-        printWriter = new PrintWriter(this.port.getOutputStream());
-        String msg = new DecimalFormat("000").format(base) + " "
-                + new DecimalFormat("000").format(shoulder) + " "
-                + new DecimalFormat("000").format(elbow) + " "
-                + new DecimalFormat("000").format(pinch);
-        printWriter.print(msg);
-        System.out.println( "sendeing msg : " + msg);
-        printWriter.flush();
-
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException ignored) { }
-
-        printWriter.close();
-    }
-
     public void move(Pose pose) {
 
         /*
@@ -184,7 +193,7 @@ public class Main extends Application {
         printWriter.close();
     }
 
-    public void start() {
+    private void start() {
 
 
         try {
@@ -272,4 +281,5 @@ public class Main extends Application {
     public Stage getPrimaryStage() {
         return primaryStage;
     }
+
 }

@@ -2,18 +2,23 @@ package robotFX.view;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.Slider;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
 import org.opencv.videoio.VideoCapture;
+import robotFX.Main;
+import robotFX.model.Pose;
 import robotFX.utiles.OpenCVUtils;
+import robotFX.utiles.ik;
 
+import java.io.File;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -62,6 +67,15 @@ public class ObjRecognitionController
 	// FXML label to show the current values set with the sliders
 	@FXML
 	private Label hsvCurrentValues;
+
+	@FXML
+    private TableView<Point> pointTable;
+	@FXML
+    private TableColumn<Point,String> pointTableIndex;
+    @FXML
+    private TableColumn<Point,String> pointTableX;
+    @FXML
+    private TableColumn<Point,String> pointTableY;
 	
 	// a timer for acquiring the video stream
 	private ScheduledExecutorService timer;
@@ -72,7 +86,32 @@ public class ObjRecognitionController
 	
 	// property for object binding
 	private ObjectProperty<String> hsvValuesProp;
-		
+    private Main main;
+    private ObservableList<Point> points;
+
+    @FXML
+    private void initialize(){
+        originalFrame.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) {
+                ImageView fulloriginalFrame = new ImageView();
+                fulloriginalFrame.imageProperty().bind(originalFrame.imageProperty());
+                this.main.fullScreenCam(fulloriginalFrame);
+            }
+        });
+
+        pointTableX.setCellValueFactory(cellData -> new SimpleStringProperty(""+cellData.getValue().x));
+        pointTableY.setCellValueFactory(cellData -> new SimpleStringProperty(""+cellData.getValue().y));
+    }
+
+
+
+    public void setMainApp(Main main,ObservableList<Point> points) {
+        this.main = main;
+        this.points = points;
+        pointTable.setItems(this.points);
+    }
+
+
 	/**
 	 * The action triggered by pushing the button on the GUI
 	 */
@@ -100,18 +139,26 @@ public class ObjRecognitionController
 				this.cameraActive = true;
 				
 				// grab a frame every 33 ms (30 frames/sec)
-				Runnable frameGrabber = new Runnable() {
-					
-					@Override
-					public void run()
-					{
-						// effectively grab and process a single frame
-						Mat frame = grabFrame();
-						// convert and show the frame
-						Image imageToShow = OpenCVUtils.mat2Image(frame);
-						updateImageView(originalFrame, imageToShow);
-					}
-				};
+				Runnable frameGrabber = () -> {
+                    // effectively grab and process a single frame
+                    Mat frame = grabFrame();
+                    // convert and show the frame
+                    Image imageToShow = OpenCVUtils.mat2Image(frame);
+                    updateImageView(originalFrame, imageToShow);
+
+                    if (this.timer.isShutdown()) {
+                        //set the placeholder image back
+                        Image image = null;
+                        try {
+                            image = new Image(this.getClass().getResource("images/camera-logo.jpg").toURI().toString());
+                            updateImageView(originalFrame,image);
+                            updateImageView(maskImage,image);
+                            updateImageView(morphImage,image);
+                        } catch (URISyntaxException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                };
 				
 				this.timer = Executors.newSingleThreadScheduledExecutor();
 				this.timer.scheduleAtFixedRate(frameGrabber, 0, 33, TimeUnit.MILLISECONDS);
@@ -131,9 +178,20 @@ public class ObjRecognitionController
 			this.cameraActive = false;
 			// update again the button content
 			this.cameraButton.setText("Start Camera");
-			
-			// stop the timer
-			this.stopAcquisition();
+
+            // stop the timer
+            this.stopAcquisition();
+
+            //set the placeholder image back
+            Image image = null;
+            try {
+                image = new Image(this.getClass().getResource("images/camera-logo.jpg").toURI().toString());
+                updateImageView(originalFrame,image);
+                updateImageView(maskImage,image);
+                updateImageView(morphImage,image);
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+            }
 		}
 	}
 	
@@ -234,7 +292,7 @@ public class ObjRecognitionController
 	{
 		// init
 		List<MatOfPoint> contours = new ArrayList<>();
-		List<Point> points = new ArrayList();
+		points.clear();
 		Mat hierarchy = new Mat();
 		
 		// find contours

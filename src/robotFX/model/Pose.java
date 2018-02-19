@@ -33,16 +33,12 @@ public class Pose {
 
     }
 
-    public String getName() {
+    private String getName() {
         return name.get();
     }
 
     public StringProperty nameProperty() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name.set(name);
     }
 
     public int getBase() {
@@ -93,45 +89,20 @@ public class Pose {
         this.pinch.set(pinch);
     }
 
-    public int getX() {
-        return X.get();
-    }
-
     public IntegerProperty xProperty() {
         return X;
-    }
-
-    public void setX(int x) {
-        this.X.set(x);
-    }
-
-    public int getY() {
-        return Y.get();
     }
 
     public IntegerProperty yProperty() {
         return Y;
     }
 
-    public void setY(int y) {
-        this.Y.set(y);
-    }
-
-    public int getZ() {
-        return Z.get();
-    }
-
     public IntegerProperty zProperty() {
         return Z;
     }
 
-    public void setZ(int z) {
-        this.Z.set(z);
-    }
-
     @Override
     public String toString() {
-    	// TODO Auto-generated method stub
     	return new DecimalFormat("000").format(base.get()) + " "
                 + new DecimalFormat("000").format(shoulder.get()) + " "
                 + new DecimalFormat("000").format(elbow.get()) + " "
@@ -145,10 +116,13 @@ public class Pose {
 
     public void sync(){
         Pose temp = ik.solve(X.get(),Y.get(),Z.get(),pinch.get());
-        setBase(temp.base.get());
-        setShoulder(temp.shoulder.get());
-        setElbow(temp.pinch.get());
-        setElbow(temp.elbow.get());
+        if (temp != null) {
+            setBase(temp.base.get());
+            setShoulder(temp.shoulder.get());
+            setElbow(temp.pinch.get());
+            setElbow(temp.elbow.get());
+        }
+
     }
 
     public void setFromPose(Pose pose) {

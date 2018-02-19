@@ -2,10 +2,10 @@ package robotFX.model;
 
 public class Cords {
 
-	double x = 0;
-	double y = 0;
-	double r = 0;
-	double theta = 0;
+	private double x;
+	private double y;
+	private double r;
+	private double theta = 0;
 	
 	public Cords(double x,double y) {
 		this.x = x;
@@ -31,30 +31,13 @@ public class Cords {
 	    // Convert to full range
 	    if(s < 0) theta *= -1;
 	}
-	
-	public double getX() {
-		return x;
-	}
-	public void setX(double x) {
-		this.x = x;
-	}
-	public double getY() {
-		return y;
-	}
-	public void setY(double y) {
-		this.y = y;
-	}
+
 	public double getR() {
 		return r;
 	}
-	public void setR(double r) {
-		this.r = r;
-	}
+
 	public double getTheta() {
 		return theta;
-	}
-	public void setTheta(double theta) {
-		this.theta = theta;
 	}
 
 	@Override

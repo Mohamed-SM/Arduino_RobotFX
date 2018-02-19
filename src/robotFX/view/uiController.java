@@ -2,24 +2,16 @@ package robotFX.view;
 
 
 import com.fazecast.jSerialComm.SerialPort;
-
 import javafx.application.Platform;
-import javafx.beans.InvalidationListener;
-import javafx.beans.property.Property;
-import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import robotFX.Main;
 import robotFX.model.Pose;
-import robotFX.utiles.ik;
 
 import java.util.Optional;
 
@@ -84,10 +76,10 @@ public class uiController {
     @FXML
     Tab XYZTab;
 
-    String textToSet = "";
+    private String textToSet = "";
     private Main main;
     
-    Pose pose; 
+    private Pose pose;
 
     @FXML
     private void initialize() {
@@ -134,36 +126,19 @@ public class uiController {
             return row;
         });
 
-        poseTable.setOnKeyPressed(new EventHandler<KeyEvent>() {
-            @Override
-            public void handle(final KeyEvent keyEvent) {
+        poseTable.setOnKeyPressed(keyEvent -> {
 
-                if (keyEvent.getCode().equals(KeyCode.DELETE)) {
-                    uiController.this.handleDeletePose();
-                }else if(keyEvent.getCode().equals(KeyCode.ENTER)) {
-                    uiController.this.onMoveButtonClic();
-                }
-
-                // ... other keyevents
+            if (keyEvent.getCode().equals(KeyCode.DELETE)) {
+                uiController.this.handleDeletePose();
+            }else if(keyEvent.getCode().equals(KeyCode.ENTER)) {
+                uiController.this.onMoveButtonClic();
             }
 
+            // ... other keyevents
         });
         
-        textArea.textProperty().addListener((ob,ol,newValue) -> {
-        	String array[] = newValue.split("\n");
-        	textToSet = "";
-            
-            if (array.length > 20) {
-				for (int i = array.length - 20; i < array.length; i++) {
-					textToSet += array[i] + "\n";
-				}
-				Platform.runLater(() -> { 
-					textArea.setText(textToSet); 
-		        }); 
-				
-			}
-        });
-        
+        textArea.textProperty().addListener(this::changed);
+
         
 
     }
@@ -254,7 +229,7 @@ public class uiController {
         }
     }
 
-    public void setPoseFromTable(Pose poseFromTable){
+    private void setPoseFromTable(Pose poseFromTable){
 
         if (poseTable.getSelectionModel().getSelectedIndex() > -1){
             pose.setFromPose(poseFromTable.getCopy());
@@ -272,7 +247,8 @@ public class uiController {
             ButtonType buttonTypeNo = new ButtonType("Annuler");
             alert.getButtonTypes().setAll(buttonTypeYes, buttonTypeNo);
             Optional<ButtonType> result = alert.showAndWait();
-            if (result.get() == buttonTypeYes) {
+            if (buttonTypeYes != result.get()) return;
+            else {
                 poseTable.getItems().remove(selectedIndex);
             }
 
@@ -360,4 +336,19 @@ public class uiController {
         AnchorPane.setLeftAnchor(ObjRecognitionBorderPan,0.0);
     }
 
+    private void changed(ObservableValue<? extends String> ob, String ol, String newValue) {
+        String array[] = newValue.split("\n");
+        textToSet = "";
+
+        StringBuilder stringBuilder = new StringBuilder(textToSet);
+
+        if (array.length > 20) {
+            for (int i = array.length - 20; i < array.length; i++) {
+                //textToSet = textToSet + (array[i] + "\n");
+                textToSet = stringBuilder.append(array[i]).append("\n").toString();
+            }
+            Platform.runLater(() -> textArea.setText(textToSet));
+
+        }
+    }
 }

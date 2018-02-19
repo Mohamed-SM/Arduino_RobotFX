@@ -6,9 +6,9 @@ import robotFX.model.Pose;
 
 
 public class ik {
-	static final double L1 = 15;
-	static final double L2 = 17;
-	static double cosangle(double opp, double adj1, double adj2)
+	private static final double L1 = 15;
+	private static final double L2 = 17;
+	private static double cosangle(double opp, double adj1, double adj2)
 	{
 	    // Cosine rule:
 	    // C^2 = A^2 + B^2 - 2*A*B*cos(angle_AB)
