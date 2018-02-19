@@ -1,9 +1,12 @@
 package robotFX.model;
 
+import java.text.DecimalFormat;
+
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import robotFX.utiles.ik;
 
 public class Pose {
     private StringProperty name = new SimpleStringProperty("");
@@ -85,5 +88,18 @@ public class Pose {
 
     public void setPinch(int pinch) {
         this.pinch.set(pinch);
+    }
+    
+    @Override
+    public String toString() {
+    	// TODO Auto-generated method stub
+    	return new DecimalFormat("000").format(base.get()) + " "
+                + new DecimalFormat("000").format(shoulder.get()) + " "
+                + new DecimalFormat("000").format(elbow.get()) + " "
+                + new DecimalFormat("000").format(pinch.get());
+    }
+    
+    public Pose getCopy() {
+    	return new Pose(this.getName(), this.getBase(), this.getShouler(), this.getElbow(), this.getPinch());
     }
 }

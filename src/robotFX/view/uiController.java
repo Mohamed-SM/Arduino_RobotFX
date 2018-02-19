@@ -1,16 +1,23 @@
-package robotFX;
+package robotFX.view;
 
 
 import com.fazecast.jSerialComm.SerialPort;
 
 import javafx.application.Platform;
+import javafx.beans.InvalidationListener;
+import javafx.beans.property.Property;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import robotFX.Main;
 import robotFX.model.Pose;
+import robotFX.utiles.ik;
 
 import java.util.Optional;
 
@@ -56,12 +63,43 @@ public class uiController {
     TableColumn<Pose,Integer> poseElbowColumn;
     @FXML
     TableColumn<Pose,Integer> posePinchColumn;
+    
+    @FXML
+    Slider XSlider;
+    
+    @FXML
+    Slider YSlider;
+    
+    @FXML
+    Slider ZSlider;
+    
+    @FXML
+    TabPane cordsTabPan;
+    
+    @FXML
+    Tab anglesTab;
+    
+    @FXML
+    Tab XYZTab;
 
     String textToSet = "";
     private Main main;
+    
+    Pose pose; 
 
     @FXML
     private void initialize() {
+    	
+    	pose = new Pose((int) baseSlider.getValue(),
+                (int) shoulderSlider.getValue(),
+                (int) elbowSlider.getValue(),
+                (int) pinchSlider.getValue());
+    	
+    	pose.baseProperty().bindBidirectional(baseSlider.valueProperty());
+    	pose.shoulerProperty().bindBidirectional(shoulderSlider.valueProperty());
+    	pose.elbowProperty().bindBidirectional(elbowSlider.valueProperty());
+    	pose.pinchProperty().bindBidirectional(pinchSlider.valueProperty());
+    	
         poseNameColumn.setCellValueFactory(cellData -> cellData.getValue().nameProperty());
         poseBaseColumn.setCellValueFactory(cellData -> cellData.getValue().baseProperty().asObject() );
         poseShoulderColumn.setCellValueFactory(cellData -> cellData.getValue().shoulerProperty().asObject() );
@@ -100,19 +138,21 @@ public class uiController {
         });
         
         textArea.textProperty().addListener((ob,ol,newValue) -> {
-            	String array[] = newValue.split("\n");
-            	textToSet = "";
-                
-                if (array.length > 20) {
-					for (int i = array.length - 20; i < array.length; i++) {
-						textToSet += array[i] + "\n";
-					}
-					Platform.runLater(() -> { 
-						textArea.setText(textToSet); 
-			        }); 
-					
+        	String array[] = newValue.split("\n");
+        	textToSet = "";
+            
+            if (array.length > 20) {
+				for (int i = array.length - 20; i < array.length; i++) {
+					textToSet += array[i] + "\n";
 				}
-            });
+				Platform.runLater(() -> { 
+					textArea.setText(textToSet); 
+		        }); 
+				
+			}
+        });
+        
+        
 
     }
 
@@ -150,12 +190,7 @@ public class uiController {
 
     @FXML
     public void onMoveButtonClic() {
-        main.move(
-                baseSlider.getValue(),
-                shoulderSlider.getValue(),
-                elbowSlider.getValue(),
-                pinchSlider.getValue()
-        );
+        main.move(pose);
     }
 
     public void appandText(String text) {
@@ -168,13 +203,7 @@ public class uiController {
     }
 
     public void onSaveClick(){
-        this.main.savedPoses.add(new Pose(
-                "P"+this.main.getSavedPoses().size(),
-                (int) baseSlider.getValue(),
-                (int) shoulderSlider.getValue(),
-                (int) elbowSlider.getValue(),
-                (int) pinchSlider.getValue())
-        );
+        this.main.savedPoses.add(pose.getCopy());
     }
 
     public void onSaveClickHere(){

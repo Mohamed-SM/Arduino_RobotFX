@@ -9,6 +9,7 @@ import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import robotFX.model.Pose;
+import robotFX.view.uiController;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -30,7 +31,7 @@ public class Main extends Application {
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("ui.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("view/ui.fxml"));
             BorderPane root = loader.load();
 
             Scene scene = new Scene(root);
