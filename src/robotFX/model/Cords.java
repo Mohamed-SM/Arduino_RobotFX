@@ -1,7 +1,7 @@
 package robotFX.model;
 
 public class Cords {
-	
+
 	double x = 0;
 	double y = 0;
 	double r = 0;

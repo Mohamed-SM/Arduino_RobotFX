@@ -8,7 +8,9 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+import org.opencv.core.Core;
 import robotFX.model.Pose;
+import robotFX.view.ObjRecognitionController;
 import robotFX.view.uiController;
 
 import java.io.IOException;
@@ -32,13 +34,19 @@ public class Main extends Application {
         this.primaryStage = primaryStage;
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("view/ui.fxml"));
+            FXMLLoader objRecognitionloader = new FXMLLoader(getClass().getResource("view/ObjRecognition.fxml"));
+
             BorderPane root = loader.load();
 
             Scene scene = new Scene(root);
             primaryStage.setScene(scene);
             primaryStage.show();
 
+            BorderPane objRecognitionBorderPan = objRecognitionloader.load();
+            ObjRecognitionController objRecognitionController = objRecognitionloader.getController();
+
             primaryStage.setOnCloseRequest(event -> {
+                objRecognitionController.setClosed();
                 desconnect();
                 System.exit(0);
             });
@@ -46,6 +54,7 @@ public class Main extends Application {
             controller = loader.getController();
             controller.setMainApp(this);
             controller.fillComboBox();
+            controller.setObjRecognitionPan(objRecognitionBorderPan);
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -54,6 +63,7 @@ public class Main extends Application {
     }
 
     public static void main(String[] args) {
+        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
         launch(args);
     }
 
@@ -160,7 +170,7 @@ public class Main extends Application {
         PrintWriter printWriter;
         printWriter = new PrintWriter(this.port.getOutputStream());
         String msg = new DecimalFormat("000").format(pose.getBase()) + " "
-                + new DecimalFormat("000").format(pose.getShouler()) + " "
+                + new DecimalFormat("000").format(pose.getShoulder()) + " "
                 + new DecimalFormat("000").format(pose.getElbow()) + " "
                 + new DecimalFormat("000").format(pose.getPinch());
         printWriter.print(msg);

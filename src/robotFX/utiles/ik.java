@@ -7,7 +7,7 @@ import robotFX.model.Pose;
 
 public class ik {
 	static final double L1 = 15;
-	static final double L2 = 15;
+	static final double L2 = 17;
 	static double cosangle(double opp, double adj1, double adj2)
 	{
 	    // Cosine rule:
@@ -36,28 +36,33 @@ public class ik {
 		y=-y;
 	    // Solve top-down view
 	    Cords c1 = new Cords(x, y);
-	    System.out.println(c1);
+	    //System.out.println(c1);
 	    
 	    // In arm plane, convert to polar
 	    Cords c2 = new Cords(c1.getR(), z);
-	    System.out.println(c2);
+	    //System.out.println(c2);
 	    
 	    // Solve arm inner angles as required
 	    double B, C;
 
 	    B = cosangle(L2, L1, c2.getR());
-	    System.out.println("B = " + Math.toDegrees(B));
+	    //System.out.println("B = " + Math.toDegrees(B));
 	    
 	    C = cosangle(c2.getR(), L1, L2);
-	    System.out.println("C = " + Math.toDegrees(C));
+	    //System.out.println("C = " + Math.toDegrees(C));
 	    if(Double.compare(B, Double.NaN) == 0  && Double.compare(C, Double.NaN) == 0) return null;
 	    
 	    double a1 = Math.toDegrees(c1.getTheta());
 	    double a2 = Math.toDegrees(c2.getTheta() + B);
 	    double a3 = Math.toDegrees(C);
 	    // Solve for servo angles from horizontal
-	    Pose pose = new Pose((int)a1 + 90,90 + (90 - (int)a2),(int)Utile.inversmap(a3, 40, 180,40, 180), pinch);
-	    
+	    Pose pose = new Pose((int)a1 + 90,
+				90 + (90 - (int)a2),
+				((int)Utile.inversmap(a3, 40, 180,40, 180)),
+				pinch
+		);
+
+		System.out.println("in sync : " + pose);
 	    return pose;
 	}
 	

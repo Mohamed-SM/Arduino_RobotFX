@@ -15,6 +15,8 @@ import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.BorderPane;
 import robotFX.Main;
 import robotFX.model.Pose;
 import robotFX.utiles.ik;
@@ -66,18 +68,18 @@ public class uiController {
     
     @FXML
     Slider XSlider;
-    
     @FXML
     Slider YSlider;
-    
     @FXML
     Slider ZSlider;
     
     @FXML
     TabPane cordsTabPan;
-    
     @FXML
     Tab anglesTab;
+
+    @FXML
+    AnchorPane objRecognitionPan;
     
     @FXML
     Tab XYZTab;
@@ -96,13 +98,23 @@ public class uiController {
                 (int) pinchSlider.getValue());
     	
     	pose.baseProperty().bindBidirectional(baseSlider.valueProperty());
-    	pose.shoulerProperty().bindBidirectional(shoulderSlider.valueProperty());
+    	pose.shoulderProperty().bindBidirectional(shoulderSlider.valueProperty());
     	pose.elbowProperty().bindBidirectional(elbowSlider.valueProperty());
     	pose.pinchProperty().bindBidirectional(pinchSlider.valueProperty());
+
+    	pose.xProperty().bindBidirectional(XSlider.valueProperty());
+        pose.yProperty().bindBidirectional(YSlider.valueProperty());
+        pose.zProperty().bindBidirectional(ZSlider.valueProperty());
+
+    	cordsTabPan.getSelectionModel().selectedItemProperty().addListener((ob, ol, newValue) -> {
+    	    if(newValue == anglesTab){
+                pose.sync();
+            }
+        });
     	
         poseNameColumn.setCellValueFactory(cellData -> cellData.getValue().nameProperty());
         poseBaseColumn.setCellValueFactory(cellData -> cellData.getValue().baseProperty().asObject() );
-        poseShoulderColumn.setCellValueFactory(cellData -> cellData.getValue().shoulerProperty().asObject() );
+        poseShoulderColumn.setCellValueFactory(cellData -> cellData.getValue().shoulderProperty().asObject() );
         poseElbowColumn.setCellValueFactory(cellData -> cellData.getValue().elbowProperty().asObject() );
         posePinchColumn.setCellValueFactory(cellData -> cellData.getValue().pinchProperty().asObject() );
 
@@ -190,7 +202,15 @@ public class uiController {
 
     @FXML
     public void onMoveButtonClic() {
-        main.move(pose);
+        if (checkConnection()) {
+            if(cordsTabPan.getSelectionModel().getSelectedItem() == XYZTab){
+
+                pose.sync();
+
+                System.out.println("printing pose after sync" + pose);
+            }
+            main.move(pose.getCopy());
+        }
     }
 
     public void appandText(String text) {
@@ -203,7 +223,16 @@ public class uiController {
     }
 
     public void onSaveClick(){
+        System.out.println("on save click");
+        System.out.println("printing pose befor sync" + pose);
+        if(cordsTabPan.getSelectionModel().getSelectedItem() == XYZTab){
+
+            pose.sync();
+
+            System.out.println("printing pose after sync" + pose);
+        }
         this.main.savedPoses.add(pose.getCopy());
+        System.out.println("printing last pose added " + this.main.savedPoses.get(this.main.savedPoses.size() - 1));
     }
 
     public void onSaveClickHere(){
@@ -211,7 +240,7 @@ public class uiController {
 
         if (selectedIndex != -1) {
             this.main.savedPoses.get(selectedIndex).setBase((int) baseSlider.getValue());
-            this.main.savedPoses.get(selectedIndex).setShouler((int) shoulderSlider.getValue());
+            this.main.savedPoses.get(selectedIndex).setShoulder((int) shoulderSlider.getValue());
             this.main.savedPoses.get(selectedIndex).setElbow((int) elbowSlider.getValue());
             this.main.savedPoses.get(selectedIndex).setPinch((int) pinchSlider.getValue());
         } else {
@@ -227,11 +256,8 @@ public class uiController {
 
     public void setPoseFromTable(Pose poseFromTable){
 
-        if (poseTable.getSelectionModel().getSelectedIndex() > -1) {
-            baseSlider.setValue(poseFromTable.getBase());
-            shoulderSlider.setValue(poseFromTable.getShouler());
-            elbowSlider.setValue(poseFromTable.getElbow());
-            pinchSlider.setValue(poseFromTable.getPinch());
+        if (poseTable.getSelectionModel().getSelectedIndex() > -1){
+            pose.setFromPose(poseFromTable.getCopy());
         }
     }
 
@@ -262,10 +288,13 @@ public class uiController {
     }
 
     public void onMoveToClick(){
+        if(! checkConnection()) return;
         int selectedIndex = poseTable.getSelectionModel().getSelectedIndex();
 
         if (selectedIndex != -1) {
-            this.main.move(this.main.savedPoses.get(selectedIndex));
+
+            pose.setFromPose(this.main.savedPoses.get(selectedIndex).getCopy());
+            this.main.move(pose.getCopy());
         } else {
             // Nothing selected.
             Alert alert = new Alert(AlertType.WARNING);
@@ -278,13 +307,14 @@ public class uiController {
     }
 
     public void onNextClick(){
-
+        if(! checkConnection()) return;
         int selectedIndex = poseTable.getSelectionModel().getSelectedIndex();
         if(selectedIndex == -1){
             poseTable.getSelectionModel().selectFirst();
             selectedIndex = poseTable.getSelectionModel().getSelectedIndex();
         }
-        this.main.move(this.main.savedPoses.get(selectedIndex));
+        pose.setFromPose(this.main.savedPoses.get(selectedIndex).getCopy());
+        this.main.move(pose.getCopy());
         //select next or go to 0 back
         if(selectedIndex < poseTable.getItems().size()-1) {
             poseTable.getSelectionModel().select(selectedIndex+1);
@@ -294,18 +324,40 @@ public class uiController {
     }
 
     public void onPrevClick(){
+        if(! checkConnection()) return;
         int selectedIndex = poseTable.getSelectionModel().getSelectedIndex();
         if(selectedIndex == -1){
             poseTable.getSelectionModel().selectFirst();
             selectedIndex = poseTable.getSelectionModel().getSelectedIndex();
         }
-        this.main.move(this.main.savedPoses.get(selectedIndex));
+        pose.setFromPose(this.main.savedPoses.get(selectedIndex).getCopy());
+        this.main.move(pose.getCopy());
 
         if(selectedIndex > 0) {
             poseTable.getSelectionModel().select(selectedIndex-1);
         }else{
             poseTable.getSelectionModel().selectLast();
         }
+    }
+
+    private boolean checkConnection(){
+        if (connectionButton.getText().equals("connection")) {
+            Alert alert = new Alert(AlertType.ERROR);
+            alert.setTitle("connection Error");
+            alert.setContentText("Not Connected yet");
+            alert.show();
+        } else {
+            return true;
+        }
+        return false;
+    }
+
+    public void setObjRecognitionPan(BorderPane ObjRecognitionBorderPan){
+        objRecognitionPan.getChildren().add(ObjRecognitionBorderPan);
+        AnchorPane.setTopAnchor(ObjRecognitionBorderPan,0.0);
+        AnchorPane.setBottomAnchor(ObjRecognitionBorderPan,0.0);
+        AnchorPane.setRightAnchor(ObjRecognitionBorderPan,0.0);
+        AnchorPane.setLeftAnchor(ObjRecognitionBorderPan,0.0);
     }
 
 }

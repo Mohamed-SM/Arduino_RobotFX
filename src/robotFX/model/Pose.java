@@ -15,12 +15,14 @@ public class Pose {
     private IntegerProperty elbow = new SimpleIntegerProperty(0);
     private IntegerProperty pinch = new SimpleIntegerProperty(0);
 
+    private IntegerProperty X = new SimpleIntegerProperty(15);
+    private IntegerProperty Y = new SimpleIntegerProperty(15);
+    private IntegerProperty Z = new SimpleIntegerProperty(15);
+
     public Pose(String name,int base, int shoulder, int elbow, int pinch) {
+        this(base,shoulder, elbow,pinch);
         this.name.set(name);
-        this.base.set(base);
-        this.shoulder.set(shoulder);
-        this.elbow.set(elbow);
-        this.pinch.set(pinch);
+
     }
 
     public Pose(int base, int shoulder, int elbow, int pinch) {
@@ -28,6 +30,7 @@ public class Pose {
         this.shoulder.set(shoulder);
         this.elbow.set(elbow);
         this.pinch.set(pinch);
+
     }
 
     public String getName() {
@@ -54,15 +57,15 @@ public class Pose {
         this.base.set(base);
     }
 
-    public int getShouler() {
+    public int getShoulder() {
         return shoulder.get();
     }
 
-    public IntegerProperty shoulerProperty() {
+    public IntegerProperty shoulderProperty() {
         return shoulder;
     }
 
-    public void setShouler(int shoulder) {
+    public void setShoulder(int shoulder) {
         this.shoulder.set(shoulder);
     }
 
@@ -89,17 +92,69 @@ public class Pose {
     public void setPinch(int pinch) {
         this.pinch.set(pinch);
     }
-    
+
+    public int getX() {
+        return X.get();
+    }
+
+    public IntegerProperty xProperty() {
+        return X;
+    }
+
+    public void setX(int x) {
+        this.X.set(x);
+    }
+
+    public int getY() {
+        return Y.get();
+    }
+
+    public IntegerProperty yProperty() {
+        return Y;
+    }
+
+    public void setY(int y) {
+        this.Y.set(y);
+    }
+
+    public int getZ() {
+        return Z.get();
+    }
+
+    public IntegerProperty zProperty() {
+        return Z;
+    }
+
+    public void setZ(int z) {
+        this.Z.set(z);
+    }
+
     @Override
     public String toString() {
     	// TODO Auto-generated method stub
     	return new DecimalFormat("000").format(base.get()) + " "
                 + new DecimalFormat("000").format(shoulder.get()) + " "
                 + new DecimalFormat("000").format(elbow.get()) + " "
-                + new DecimalFormat("000").format(pinch.get());
+                + new DecimalFormat("000").format(pinch.get()) + " " + X.get() +  Y.get() + Z.get();
     }
     
     public Pose getCopy() {
-    	return new Pose(this.getName(), this.getBase(), this.getShouler(), this.getElbow(), this.getPinch());
+        return new Pose(this.getName(), this.base.get(), this.shoulder.get(), this.elbow.get(), this.pinch.get());
+
+    }
+
+    public void sync(){
+        Pose temp = ik.solve(X.get(),Y.get(),Z.get(),pinch.get());
+        setBase(temp.base.get());
+        setShoulder(temp.shoulder.get());
+        setElbow(temp.pinch.get());
+        setElbow(temp.elbow.get());
+    }
+
+    public void setFromPose(Pose pose) {
+        this.setBase(pose.getBase());
+        this.setShoulder(pose.getShoulder());
+        this.setElbow(pose.getElbow());
+        this.setPinch(pose.getPinch());
     }
 }
