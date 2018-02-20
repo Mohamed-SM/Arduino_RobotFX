@@ -3,18 +3,22 @@ package robotFX.view;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.Camera;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import org.opencv.core.*;
+import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
 import org.opencv.videoio.VideoCapture;
 import robotFX.Main;
 import robotFX.model.Pose;
 import robotFX.utiles.OpenCVUtils;
+import robotFX.utiles.Utile;
 import robotFX.utiles.ik;
 
 import java.io.File;
@@ -71,8 +75,6 @@ public class ObjRecognitionController
 	@FXML
     private TableView<Point> pointTable;
 	@FXML
-    private TableColumn<Point,String> pointTableIndex;
-    @FXML
     private TableColumn<Point,String> pointTableX;
     @FXML
     private TableColumn<Point,String> pointTableY;
@@ -88,6 +90,7 @@ public class ObjRecognitionController
 	private ObjectProperty<String> hsvValuesProp;
     private Main main;
     private ObservableList<Point> points;
+    private int counter = 0;
 
     @FXML
     private void initialize(){
@@ -99,10 +102,41 @@ public class ObjRecognitionController
             }
         });
 
-        pointTableX.setCellValueFactory(cellData -> new SimpleStringProperty(""+cellData.getValue().x));
-        pointTableY.setCellValueFactory(cellData -> new SimpleStringProperty(""+cellData.getValue().y));
+        //maping the video resolution 640*480 to real dimentions in cm 45*34
+        // the Screen Y is the Real X Axe so the axes are inversed
+        //remove from 34 becous the X is in the top but i real it's in the bottom
+        pointTableX.setCellValueFactory(cellData ->
+            new SimpleStringProperty(""+ (34 - Utile.map(cellData.getValue().y,0,480,0,34)))
+        );
+
+        //remove 22.5 to make the center 0 and not 22.5
+        pointTableY.setCellValueFactory(cellData ->
+            new SimpleStringProperty(""+ (Utile.map(cellData.getValue().x,0,640,0,46) - 22.5))
+        );
+
+
+        pointTable.setRowFactory(tv -> {
+            TableRow<Point> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 1 && (!row.isEmpty())) {
+                    int index = pointTable.getSelectionModel().getSelectedIndex();
+                    System.out.println(index);
+                    Point point = points.get(index);
+                    Point point1 = new Point(
+                            (34 - Utile.map(point.y,0,480,0,34)),
+                            (Utile.map(point.x,0,640,0,46) - 22.5)
+                    );
+                    this.grap(point1);
+                }
+            });
+            return row;
+        });
     }
 
+    private void grap(Point point) {
+        System.out.println(point);
+        main.grap(point);
+    }
 
 
     public void setMainApp(Main main,ObservableList<Point> points) {
@@ -131,12 +165,14 @@ public class ObjRecognitionController
 		if (!this.cameraActive)
 		{
 			// start the video capture
-			this.capture.open(0);
+			this.capture.open(1);
 			
 			// is the video stream available?
 			if (this.capture.isOpened())
 			{
+
 				this.cameraActive = true;
+
 				
 				// grab a frame every 33 ms (30 frames/sec)
 				Runnable frameGrabber = () -> {
@@ -148,9 +184,9 @@ public class ObjRecognitionController
 
                     if (this.timer.isShutdown()) {
                         //set the placeholder image back
-                        Image image = null;
+
                         try {
-                            image = new Image(this.getClass().getResource("images/camera-logo.jpg").toURI().toString());
+                            Image image = new Image(this.getClass().getResource("images/camera-logo.jpg").toURI().toString());
                             updateImageView(originalFrame,image);
                             updateImageView(maskImage,image);
                             updateImageView(morphImage,image);
@@ -159,10 +195,10 @@ public class ObjRecognitionController
                         }
                     }
                 };
-				
+
 				this.timer = Executors.newSingleThreadScheduledExecutor();
 				this.timer.scheduleAtFixedRate(frameGrabber, 0, 33, TimeUnit.MILLISECONDS);
-				
+
 				// update the button content
 				this.cameraButton.setText("Stop Camera");
 			}
@@ -194,16 +230,16 @@ public class ObjRecognitionController
             }
 		}
 	}
-	
+
 	/**
 	 * Get a frame from the opened video stream (if any)
-	 * 
+	 *
 	 * @return the {@link Image} to show
 	 */
 	private Mat grabFrame()
 	{
 		Mat frame = new Mat();
-		
+
 		// check if the capture is open
 		if (this.capture.isOpened())
 		{
@@ -211,7 +247,7 @@ public class ObjRecognitionController
 			{
 				// read the current frame
 				this.capture.read(frame);
-				
+
 				// if the frame is not empty, process it
 				if (!frame.empty())
 				{
@@ -220,51 +256,51 @@ public class ObjRecognitionController
 					Mat hsvImage = new Mat();
 					Mat mask = new Mat();
 					Mat morphOutput = new Mat();
-					
+
 					// remove some noise
 					Imgproc.blur(frame, blurredImage, new Size(7, 7));
 
-					
+
 					// convert the frame to HSV
 					Imgproc.cvtColor(blurredImage, hsvImage, Imgproc.COLOR_BGR2HSV);
-					
+
 					// get thresholding values from the UI
 					// remember: H ranges 0-180, S and V range 0-255
 					Scalar minValues = new Scalar(this.hueStart.getValue(), this.saturationStart.getValue(),
 							this.valueStart.getValue());
 					Scalar maxValues = new Scalar(this.hueStop.getValue(), this.saturationStop.getValue(),
 							this.valueStop.getValue());
-					
+
 					// show the current selected HSV range
 					String valuesToPrint = "Hue range: " + minValues.val[0] + " - " + maxValues.val[0]
 							+ " Saturation range: " + minValues.val[1] + " - " + maxValues.val[1]
 							+ " Value range: " + minValues.val[2] + " - " + maxValues.val[2];
 					OpenCVUtils.onFXThread(this.hsvValuesProp, valuesToPrint);
-					
+
 					// threshold HSV image to select tennis balls
 					Core.inRange(hsvImage, minValues, maxValues, mask);
 					// show the partial output
 					this.updateImageView(this.maskImage, OpenCVUtils.mat2Image(mask));
-					
+
 					// morphological operators
 					// dilate with large element, erode with small ones
 					Mat dilateElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(24, 24));
 					Mat erodeElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(12, 12));
-					
+
 					Imgproc.erode(mask, morphOutput, erodeElement);
 					Imgproc.erode(morphOutput, morphOutput, erodeElement);
-					
+
 					Imgproc.dilate(morphOutput, morphOutput, dilateElement);
 					Imgproc.dilate(morphOutput, morphOutput, dilateElement);
-					
+
 					// show the partial output
 					this.updateImageView(this.morphImage, OpenCVUtils.mat2Image(morphOutput));
-					
+
 					// find the tennis ball(s) contours and show them
 					frame = this.findAndDrawBalls(morphOutput, frame);
 
 				}
-				
+
 			}
 			catch (Exception e)
 			{
@@ -273,14 +309,14 @@ public class ObjRecognitionController
 				e.printStackTrace();
 			}
 		}
-		
+
 		return frame;
 	}
-	
+
 	/**
 	 * Given a binary image containing one or more closed surfaces, use it as a
 	 * mask to find and highlight the objects contours
-	 * 
+	 *
 	 * @param maskedImage
 	 *            the binary image to be used as a mask
 	 * @param frame
@@ -290,14 +326,15 @@ public class ObjRecognitionController
 	 */
 	private Mat findAndDrawBalls(Mat maskedImage, Mat frame)
 	{
+        counter++;
 		// init
 		List<MatOfPoint> contours = new ArrayList<>();
-		points.clear();
+
 		Mat hierarchy = new Mat();
-		
+
 		// find contours
 		Imgproc.findContours(maskedImage, contours, hierarchy, Imgproc.RETR_CCOMP, Imgproc.CHAIN_APPROX_SIMPLE);
-		
+
 		// if any contour exist...
 		if (hierarchy.size().height > 0 && hierarchy.size().width > 0)
 		{
@@ -305,43 +342,56 @@ public class ObjRecognitionController
 			for (int idx = 0; idx >= 0; idx = (int) hierarchy.get(0, idx)[0])
 			{
 				Imgproc.drawContours(frame, contours, idx, new Scalar(250, 0, 0));
-				
-				
-				//make a list of point of the center of detected objects
+
+				//Clear the list before filling it again
+                if (counter == 10) {
+                    points.clear();
+                }
+
+                //make a list of point of the center of detected objects
 				for(MatOfPoint contour : contours) {
+
 					MatOfPoint mop = new MatOfPoint();
 					mop.fromList(contour.toList());
-					
-					
+
+
 					Moments moments = Imgproc.moments(mop);
 
 					Point centroid = new Point();
 
 					centroid.x = moments.get_m10() / moments.get_m00();
 					centroid.y = moments.get_m01() / moments.get_m00();
-					
-					points.add(centroid);
-					
-					Imgproc.circle (
+
+                    if (counter == 10) {
+                        points.add(centroid);
+                    }
+
+                    Imgproc.circle (
 					         frame,                 //Matrix obj of the image
 					         centroid,    //Center of the circle
 					         1,                    //Radius
 					         new Scalar(0, 0, 255),  //Scalar object for color
 					         10                      //Thickness of the circle
 					      );
-					      
+
 				}
-				
+
 			}
 		}
-		
+
+        //reset the counter
+        if (counter == 10) {
+            counter = 0;
+        }
+
 		return frame;
+
 	}
-	
+
 	/**
 	 * Set typical {@link ImageView} properties: a fixed width and the
 	 * information to preserve the original image ration
-	 * 
+	 *
 	 * @param image
 	 *            the {@link ImageView} to use
 	 * @param dimension
@@ -354,7 +404,7 @@ public class ObjRecognitionController
 		// preserve the image ratio
 		image.setPreserveRatio(true);
 	}
-	
+
 	/**
 	 * Stop the acquisition from the camera and release all the resources
 	 */
@@ -403,5 +453,19 @@ public class ObjRecognitionController
 	{
 		this.stopAcquisition();
 	}
-	
+
+    @FXML
+    public void grapAll(){
+	    ObservableList<Point> courentPointList = FXCollections.observableArrayList();
+	    points.forEach(point -> {
+            Point point1 = new Point(
+                    (34 - Utile.map(point.y,0,480,0,34)),
+                    (Utile.map(point.x,0,640,0,46) - 22.5)
+            );
+            courentPointList.add(point1);
+        });
+
+	    this.main.grapAll(courentPointList);
+    }
+
 }

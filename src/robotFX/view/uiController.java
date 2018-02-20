@@ -351,4 +351,9 @@ public class uiController {
 
         }
     }
+
+    public void setXY(double x, double y) {
+        XSlider.setValue(x);
+        YSlider.setValue(y);
+    }
 }

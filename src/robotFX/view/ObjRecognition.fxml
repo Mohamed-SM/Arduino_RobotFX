@@ -20,6 +20,7 @@
 				<Insets left="10.0" right="10.0" top="10.0" />
 			</padding>
 			<Button fx:id="cameraButton" alignment="center" onAction="#startCamera" text="Start camera" />
+         <Button fx:id="c" mnemonicParsing="false" onAction="#grapAll" text="Start" />
 			<Label text="Hue Start" />
 			<Slider fx:id="hueStart" blockIncrement="1" max="180" min="0" value="20" />
 			<Label text="Hue Stop" />
@@ -73,7 +74,6 @@
    <left>
       <TableView fx:id="pointTable" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
         <columns>
-            <TableColumn fx:id="pointTableindex" prefWidth="75.0" />
           <TableColumn fx:id="pointTableX" prefWidth="75.0" text="Point.X" />
           <TableColumn fx:id="pointTableY" prefWidth="51.0" text="Point.Y" />
         </columns>

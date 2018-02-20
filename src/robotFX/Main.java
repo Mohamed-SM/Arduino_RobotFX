@@ -15,6 +15,7 @@ import javafx.stage.Stage;
 import org.opencv.core.Core;
 import org.opencv.core.Point;
 import robotFX.model.Pose;
+import robotFX.utiles.ik;
 import robotFX.view.ObjRecognitionController;
 import robotFX.view.uiController;
 
@@ -282,4 +283,73 @@ public class Main extends Application {
         return primaryStage;
     }
 
+    public void grap(Point point) {
+
+        Thread grapThread = new Thread(() -> {
+            System.out.println("Starting grap");
+            Pose pose = ik.solve(point.x,point.y,10,170);
+            controller.setXY(point.x,point.y);
+            this.move(pose);
+
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ignored) { }
+
+            pose = ik.solve(point.x,point.y,0,170);
+            controller.setXY(point.x,point.y);
+            this.move(pose);
+
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ignored) { }
+
+            pose = ik.solve(point.x,point.y,-14,170);
+            this.move(pose);
+
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ignored) { }
+
+            pose = ik.solve(point.x,point.y,-14,130);
+            this.move(pose);
+
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ignored) { }
+
+            pose = ik.solve(point.x,point.y,10,130);
+            this.move(pose);
+
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ignored) { }
+
+            pose = ik.solve(0,30,10,130);
+            this.move(pose);
+
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ignored) { }
+
+            pose = ik.solve(0,30,10,175);
+            this.move(pose);
+
+        });
+        grapThread.start();
+    }
+
+    public void grapAll(ObservableList<Point> courentPointList) {
+        Thread grapAllThread = new Thread(() -> {
+
+            courentPointList.forEach(point -> {
+                Main.this.grap(point);
+
+                try {
+                    Thread.sleep(20000);
+                } catch (InterruptedException ignored) { }
+
+            });
+        });
+        grapAllThread.start();
+    }
 }
