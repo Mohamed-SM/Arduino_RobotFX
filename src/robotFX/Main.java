@@ -22,8 +22,6 @@ import robotFX.view.uiController;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Scanner;
 
 
@@ -287,7 +285,7 @@ public class Main extends Application {
 
         Thread grapThread = new Thread(() -> {
             System.out.println("Starting grap");
-            Pose pose = ik.solve(point.x,point.y,10,170);
+            Pose pose = ik.solve(point.x,point.y,10,120);
             controller.setXY(point.x,point.y);
             this.move(pose);
 
@@ -295,7 +293,7 @@ public class Main extends Application {
                 Thread.sleep(2000);
             } catch (InterruptedException ignored) { }
 
-            pose = ik.solve(point.x,point.y,0,170);
+            pose = ik.solve(point.x,point.y,0,120);
             controller.setXY(point.x,point.y);
             this.move(pose);
 
@@ -303,35 +301,43 @@ public class Main extends Application {
                 Thread.sleep(2000);
             } catch (InterruptedException ignored) { }
 
-            pose = ik.solve(point.x,point.y,-14,170);
+            pose = ik.solve(point.x,point.y,-13,120);
             this.move(pose);
 
             try {
                 Thread.sleep(2000);
             } catch (InterruptedException ignored) { }
 
-            pose = ik.solve(point.x,point.y,-14,130);
+            pose = ik.solve(point.x,point.y,-13,90);
             this.move(pose);
 
             try {
                 Thread.sleep(2000);
             } catch (InterruptedException ignored) { }
 
-            pose = ik.solve(point.x,point.y,10,130);
+            pose = ik.solve(point.x,point.y,10,90);
             this.move(pose);
 
             try {
                 Thread.sleep(2000);
             } catch (InterruptedException ignored) { }
 
-            pose = ik.solve(0,30,10,130);
+            pose = ik.solve(0,30,10,90);
             this.move(pose);
 
             try {
                 Thread.sleep(2000);
             } catch (InterruptedException ignored) { }
 
-            pose = ik.solve(0,30,10,175);
+            pose = ik.solve(0,30,10,120);
+            this.move(pose);
+
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ignored) { }
+
+            pose = ik.solve(10,0,10,120);
+            controller.setXY(point.x,point.y);
             this.move(pose);
 
         });
@@ -339,17 +345,14 @@ public class Main extends Application {
     }
 
     public void grapAll(ObservableList<Point> courentPointList) {
-        Thread grapAllThread = new Thread(() -> {
+        Thread grapAllThread = new Thread(() -> courentPointList.forEach(point -> {
+            Main.this.grap(point);
 
-            courentPointList.forEach(point -> {
-                Main.this.grap(point);
+            try {
+                Thread.sleep(20000);
+            } catch (InterruptedException ignored) { }
 
-                try {
-                    Thread.sleep(20000);
-                } catch (InterruptedException ignored) { }
-
-            });
-        });
+        }));
         grapAllThread.start();
     }
 }

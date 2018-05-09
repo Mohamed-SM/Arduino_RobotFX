@@ -6,22 +6,17 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.Camera;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import org.opencv.core.*;
-import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
 import org.opencv.videoio.VideoCapture;
 import robotFX.Main;
-import robotFX.model.Pose;
 import robotFX.utiles.OpenCVUtils;
 import robotFX.utiles.Utile;
-import robotFX.utiles.ik;
 
-import java.io.File;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,10 +63,6 @@ public class ObjRecognitionController
 	private Slider valueStart;
 	@FXML
 	private Slider valueStop;
-	// FXML label to show the current values set with the sliders
-	@FXML
-	private Label hsvCurrentValues;
-
 	@FXML
     private TableView<Point> pointTable;
 	@FXML
@@ -90,6 +81,7 @@ public class ObjRecognitionController
 	private ObjectProperty<String> hsvValuesProp;
     private Main main;
     private ObservableList<Point> points;
+	private ObservableList<Point> AnchorPoints = FXCollections.observableArrayList();
     private int counter = 0;
 
     @FXML
@@ -99,6 +91,14 @@ public class ObjRecognitionController
                 ImageView fulloriginalFrame = new ImageView();
                 fulloriginalFrame.imageProperty().bind(originalFrame.imageProperty());
                 this.main.fullScreenCam(fulloriginalFrame);
+            }else {
+                AnchorPoints.add(new Point(
+                        Utile.map(event.getX(),0,originalFrame.getFitHeight(),0,480),
+                        Utile.map(event.getY(),0,originalFrame.getFitWidth(),0,640)
+                ));
+                if(AnchorPoints.size()>4){
+                    AnchorPoints.remove(0);
+                }
             }
         });
 
@@ -106,16 +106,27 @@ public class ObjRecognitionController
         // the Screen Y is the Real X Axe so the axes are inversed
         //remove from 34 becous the X is in the top but i real it's in the bottom
         pointTableX.setCellValueFactory(cellData ->
-            new SimpleStringProperty(""+ (34 - Utile.map(cellData.getValue().y,0,480,0,34)))
+                {
+                    if(AnchorPoints.size()<3) return null;
+                    return new SimpleStringProperty(""
+                            + (29 - Utile.map(cellData.getValue().y, AnchorPoints.get(0).y, AnchorPoints.get(1).y, 0, 29))
+                    );
+                }
         );
 
         //remove 22.5 to make the center 0 and not 22.5
         pointTableY.setCellValueFactory(cellData ->
-            new SimpleStringProperty(""+ (Utile.map(cellData.getValue().x,0,640,0,46) - 22.5))
+                {
+                    if(AnchorPoints.size()<3) return null;
+                    return new SimpleStringProperty("" +
+                            (Utile.map(cellData.getValue().x, AnchorPoints.get(0).x, AnchorPoints.get(2).x, 0, 40) - 20)
+                    );
+                }
         );
 
 
-        pointTable.setRowFactory(tv -> {
+        //TODO get table selection
+        /*pointTable.setRowFactory(tv -> {
             TableRow<Point> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 1 && (!row.isEmpty())) {
@@ -123,21 +134,16 @@ public class ObjRecognitionController
                     System.out.println(index);
                     Point point = points.get(index);
                     Point point1 = new Point(
-                            (34 - Utile.map(point.y,0,480,0,34)),
-                            (Utile.map(point.x,0,640,0,46) - 22.5)
+                            (29 - Utile.map(point.y,AnchorPoints.get(0).y,AnchorPoints.get(1).y,0,29)),
+                            (Utile.map(point.x,AnchorPoints.get(0).x,AnchorPoints.get(2).x,0,40) - 20)
                     );
-                    this.grap(point1);
+                    System.out.println(point);
+        			main.grap(point);
                 }
             });
             return row;
-        });
+        });*/
     }
-
-    private void grap(Point point) {
-        System.out.println(point);
-        main.grap(point);
-    }
-
 
     public void setMainApp(Main main,ObservableList<Point> points) {
         this.main = main;
@@ -155,8 +161,7 @@ public class ObjRecognitionController
 		// bind a text property with the string containing the current range of
 		// HSV values for object detection
 		hsvValuesProp = new SimpleObjectProperty<>();
-		this.hsvCurrentValues.textProperty().bind(hsvValuesProp);
-				
+
 		// set a fixed width for all the image to show and preserve image ratio
 		this.imageViewProperties(this.originalFrame, 800);
 		this.imageViewProperties(this.maskImage, 200);
@@ -219,7 +224,7 @@ public class ObjRecognitionController
             this.stopAcquisition();
 
             //set the placeholder image back
-            Image image = null;
+            Image image;
             try {
                 image = new Image(this.getClass().getResource("images/camera-logo.jpg").toURI().toString());
                 updateImageView(originalFrame,image);
@@ -242,15 +247,12 @@ public class ObjRecognitionController
 
 		// check if the capture is open
 		if (this.capture.isOpened())
-		{
-			try
-			{
+			try {
 				// read the current frame
 				this.capture.read(frame);
 
 				// if the frame is not empty, process it
-				if (!frame.empty())
-				{
+				if (!frame.empty()) {
 					// init
 					Mat blurredImage = new Mat();
 					Mat hsvImage = new Mat();
@@ -299,16 +301,24 @@ public class ObjRecognitionController
 					// find the tennis ball(s) contours and show them
 					frame = this.findAndDrawBalls(morphOutput, frame);
 
+					//Draw the anchors
+					for (Point AnchorPoint : AnchorPoints) {
+						Imgproc.circle(
+								frame,                 //Matrix obj of the image
+								AnchorPoint,    //Center of the circle
+								1,                    //Radius
+								new Scalar(0, 255, 0),  //Scalar object for color
+								5                      //Thickness of the circle
+						);
+					}
+
 				}
 
-			}
-			catch (Exception e)
-			{
+			} catch (Exception e) {
 				// log the (full) error
 				System.err.print("Exception during the image elaboration...");
 				e.printStackTrace();
 			}
-		}
 
 		return frame;
 	}
@@ -344,7 +354,7 @@ public class ObjRecognitionController
 				Imgproc.drawContours(frame, contours, idx, new Scalar(250, 0, 0));
 
 				//Clear the list before filling it again
-                if (counter == 10) {
+                if (counter > 10) {
                     points.clear();
                 }
 
@@ -362,7 +372,7 @@ public class ObjRecognitionController
 					centroid.x = moments.get_m10() / moments.get_m00();
 					centroid.y = moments.get_m01() / moments.get_m00();
 
-                    if (counter == 10) {
+                    if (counter > 10) {
                         points.add(centroid);
                     }
 
@@ -371,7 +381,7 @@ public class ObjRecognitionController
 					         centroid,    //Center of the circle
 					         1,                    //Radius
 					         new Scalar(0, 0, 255),  //Scalar object for color
-					         10                      //Thickness of the circle
+					         5                      //Thickness of the circle
 					      );
 
 				}
@@ -380,7 +390,7 @@ public class ObjRecognitionController
 		}
 
         //reset the counter
-        if (counter == 10) {
+        if (counter > 10) {
             counter = 0;
         }
 
@@ -459,8 +469,8 @@ public class ObjRecognitionController
 	    ObservableList<Point> courentPointList = FXCollections.observableArrayList();
 	    points.forEach(point -> {
             Point point1 = new Point(
-                    (34 - Utile.map(point.y,0,480,0,34)),
-                    (Utile.map(point.x,0,640,0,46) - 22.5)
+                    (29 - Utile.map(point.y,AnchorPoints.get(0).y,AnchorPoints.get(1).y,0,29)),
+                    (Utile.map(point.x,AnchorPoints.get(0).x,AnchorPoints.get(2).x,0,40) - 20)
             );
             courentPointList.add(point1);
         });

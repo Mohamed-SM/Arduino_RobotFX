@@ -42,7 +42,6 @@ public class Cords {
 
 	@Override
 	public String toString() {
-		// TODO Auto-generated method stub
 		return "Cord : (" + this.x + "," + this.y + ").(" + this.r + "," + Math.toDegrees(this.theta) + ")";
 	}
 }
