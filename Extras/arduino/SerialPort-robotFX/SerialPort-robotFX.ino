@@ -1,5 +1,15 @@
 #include <VarSpeedServo.h>
 
+typedef struct {
+    int base;
+    int shoulder;
+    int elbow;
+    int pinch;
+} pose;
+
+pose p[10];
+int index;
+
 VarSpeedServo base;
 VarSpeedServo shoulder;
 VarSpeedServo elbow;
@@ -33,20 +43,38 @@ boolean buttonMode = false;
 String msg;
 
 void goHome(){
-  moveTo(90,64,168,170);
+  //moveTo(90,65,140,135);
+  moveTo(90,90,90,80);
+}
+
+void goHardHome(){
+  //moveTo(90,65,140,135);
+  moveTo(90,90,180,140);
+}
+
+int invermap(int x,int a,int b,int c,int d){
+  return -((x - a) * (d - c) / (b - a) + c) + c + d;
 }
 
 void moveTo(long bVal,int sVal,int eVal, int pVal){
 
-  baseVal = map(bVal,-10,200,0,180);
-  shoulderVal = sVal;
-  elbowVal = map(eVal,-30,180,0,180);
+  baseVal = map(bVal,-10,190,0,180);
+  shoulderVal = invermap(sVal,180,0,180,0);
+  elbowVal = map(eVal,-15,190,0,180);
+  elbowVal = invermap(elbowVal,55,180,55,180);
   pinchVal = pVal;
   
   shoulder.slowmove(shoulderVal,30);
   base.slowmove(baseVal,30);
-  elbow.slowmove(elbowVal,60);
+  elbow.slowmove(elbowVal,30);
   pinch.write(pinchVal);
+}
+
+void moveToPose(int index){
+  shoulder.slowmove(p[index].shoulder,60);
+  base.slowmove(p[index].base,60);
+  elbow.slowmove(p[index].elbow,90);
+  pinch.write(p[index].pinch);
 }
 
 void changeMode(int mode){
@@ -142,6 +170,13 @@ void serialModeGo(){
       digitalWrite(A2,HIGH);
       Serial.print("msg : ");
       Serial.println(msg);
+
+      if(msg.equals("go home")){
+        goHome();
+      }
+      if(msg.equals("go hard home")){
+        goHardHome();
+      }
       
       if(msg.length() == 15){
         String strbaseval = msg.substring(0,3);
@@ -201,7 +236,6 @@ void potModeGo(){
     delay(1);
   }
 
-
   while (digitalRead(elbowPin) == HIGH) {
     digitalWrite(A1,HIGH);
     digitalWrite(A2,LOW);
@@ -213,16 +247,55 @@ void potModeGo(){
     delay(1);
   }
 
-
   while (digitalRead(pinchPin) == HIGH) {
     digitalWrite(A1,HIGH);
     digitalWrite(A2,LOW);
     pinchVal = analogRead(potpin);
-    pinchVal = map(pinchVal, 0, 1023, 120, 180);
+    pinchVal = map(pinchVal, 0, 1023, 70, 145);
     pinch.write(pinchVal);
     Serial.print("moving pinch : ");
     Serial.println(pinchVal);
     delay(1);
+  }
+
+  if(digitalRead(RIGHTButton) == HIGH) {
+    index = 0;
+    for(int i = 0 ; i < 5; i++){
+    digitalWrite(A1,LOW);
+    delay(100);
+    digitalWrite(A1,HIGH);
+    delay(100);
+    }
+  }
+  if(digitalRead(UPButton)== HIGH)runPos();
+  if(digitalRead(DOWNButton) == HIGH) savePos();
+
+}
+
+void savePos(){
+  for(int i = 0 ; i < 5; i++){
+    digitalWrite(A1,LOW);
+    delay(100);
+    digitalWrite(A1,HIGH);
+    delay(100);
+  }
+  p[index].base = baseVal;
+  p[index].shoulder =  shoulderVal;
+  p[index].elbow = elbowVal;
+  p[index].pinch = pinchVal;
+  index = (index++)%10;
+}
+
+void runPos(){
+  for(int i = 0 ; i < 5; i++){
+    digitalWrite(A1,LOW);
+    delay(100);
+    digitalWrite(A1,HIGH);
+    delay(100);
+  }
+  for(int i = 0;i<10;i++){
+    moveToPose(i);
+    delay(1000);
   }
 }
 
